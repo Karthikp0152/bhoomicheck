@@ -19,7 +19,7 @@ class GeminiProvider:
     that could be committed.
     """
 
-    def __init__(self, model: str = "gemini-2.5-flash") -> None:
+    def __init__(self, model: str = "gemini-3.5-flash") -> None:
         """
         Args:
             model: Gemini model name. Flash is the free-tier workhorse;

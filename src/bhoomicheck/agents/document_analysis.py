@@ -36,14 +36,17 @@ only — no prose, no markdown fences.
 
 Parcel: survey no. {survey_no}, village {village}, mandal {mandal}, \
 district {district}.
+Today's date: {today}. The attached files, in order, are: {filenames}.
 
 Your JSON must match this schema exactly:
 {schema}
 
 Rules:
-- One entry in "documents" per attached file; source_document is the filename.
+- One entry in "documents" per attached file; source_document must be the
+  exact filename from the list above (never invent a filename).
 - Every finding needs provenance (source_type "manual", document = the
-  filename it came from) and a confidence with a concrete reason.
+  filename it came from, fetched_at = today's date given above) and a
+  confidence with a concrete reason.
 - If something cannot be read or verified, report it as a finding with
   status "not_verified" — never omit it silently.
 - Express extraction uncertainty honestly in extraction_confidence.
@@ -86,6 +89,11 @@ class DocumentAnalysisAgent:
             village=parcel.village,
             mandal=parcel.mandal,
             district=parcel.district,
+            # Facts the system knows go into the prompt, never guessed by
+            # the model: real filenames and the actual date (provenance
+            # principle — a hallucinated filename is untraceable).
+            today=datetime.now(timezone.utc).date().isoformat(),
+            filenames=", ".join(p.name for p in pdf_paths),
             schema=json.dumps(_LLMPayload.model_json_schema(), indent=2),
         )
 
