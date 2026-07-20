@@ -11,5 +11,10 @@ dependencies = [
     "pydantic>=2",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/bhoomicheck"]
