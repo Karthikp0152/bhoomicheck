@@ -12,7 +12,9 @@ from pydantic import ValidationError
 
 from bhoomicheck.schemas.confidence import Confidence
 from bhoomicheck.schemas.finding import Finding
+from bhoomicheck.schemas.parcel import ParcelIdentifier
 from bhoomicheck.schemas.provenance import Provenance
+from bhoomicheck.schemas.report import BaseAgentReport
 
 
 def make_provenance(**overrides: object) -> Provenance:
@@ -25,6 +27,30 @@ def make_provenance(**overrides: object) -> Provenance:
     }
     fields.update(overrides)
     return Provenance(**fields)  # type: ignore[arg-type]
+
+
+def make_parcel(**overrides: object) -> ParcelIdentifier:
+    """A valid baseline ParcelIdentifier."""
+    fields: dict[str, object] = {
+        "survey_no": "123/A",
+        "village": "Hasanparthy",
+        "mandal": "Hasanparthy",
+        "district": "Warangal",
+    }
+    fields.update(overrides)
+    return ParcelIdentifier(**fields)  # type: ignore[arg-type]
+
+
+def make_finding(**overrides: object) -> Finding:
+    """A valid baseline Finding."""
+    fields: dict[str, object] = {
+        "claim": "survey no. 123/A absent from prohibited-lands register",
+        "status": "verified_ok",
+        "provenance": make_provenance(),
+        "confidence": make_confidence(),
+    }
+    fields.update(overrides)
+    return Finding(**fields)  # type: ignore[arg-type]
 
 
 def make_confidence(**overrides: object) -> Confidence:
@@ -132,3 +158,59 @@ class TestFinding:
                 confidence=make_confidence(),
             )
         assert ("provenance", "fetched_at") == exc_info.value.errors()[0]["loc"]
+
+
+class TestParcelIdentifier:
+    def test_valid(self) -> None:
+        p = make_parcel()
+        assert p.survey_no == "123/A"
+
+    @pytest.mark.parametrize("field", ["survey_no", "village", "mandal", "district"])
+    def test_rejects_empty_field(self, field: str) -> None:
+        with pytest.raises(ValidationError):
+            make_parcel(**{field: ""})
+
+
+class TestBaseAgentReport:
+    def make_report(self, **overrides: object) -> BaseAgentReport:
+        fields: dict[str, object] = {
+            "agent_name": "zoning",
+            "parcel": make_parcel(),
+            "generated_at": "2026-07-19T14:05:00",
+            "findings": [make_finding()],
+        }
+        fields.update(overrides)
+        return BaseAgentReport(**fields)  # type: ignore[arg-type]
+
+    def test_valid(self) -> None:
+        r = self.make_report()
+        assert len(r.findings) == 1
+
+    def test_rejects_empty_findings(self) -> None:
+        # An empty report is indistinguishable from a silent failure; the
+        # honest form of "nothing to say" is explicit not_verified findings.
+        with pytest.raises(ValidationError):
+            self.make_report(findings=[])
+
+    def test_bad_list_element_reports_indexed_path(self) -> None:
+        bad = make_finding().model_dump()
+        bad["confidence"] = {"level": "high", "reason": ""}
+        with pytest.raises(ValidationError) as exc_info:
+            self.make_report(findings=[make_finding(), bad])
+        loc = exc_info.value.errors()[0]["loc"]
+        assert loc == ("findings", 1, "confidence", "reason")
+
+    def test_subclass_still_enforces_base_rules(self) -> None:
+        # Pins the shared-base contract: a specialist schema must not be
+        # able to accidentally relax the base guarantees.
+        class SpecialistReport(BaseAgentReport):
+            extra_field: str
+
+        with pytest.raises(ValidationError):
+            SpecialistReport(
+                agent_name="specialist",
+                parcel=make_parcel(),
+                generated_at="2026-07-19T14:05:00",
+                findings=[],
+                extra_field="x",
+            )
