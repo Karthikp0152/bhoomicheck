@@ -49,6 +49,8 @@ Rules:
   confidence with a concrete reason.
 - If something cannot be read or verified, report it as a finding with
   status "not_verified" — never omit it silently.
+- Set each finding's category to the closest risk family in the schema;
+  use "other" only when nothing else fits.
 - Express extraction uncertainty honestly in extraction_confidence.
 """
 

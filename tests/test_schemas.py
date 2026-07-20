@@ -46,6 +46,7 @@ def make_finding(**overrides: object) -> Finding:
     """A valid baseline Finding."""
     fields: dict[str, object] = {
         "claim": "survey no. 123/A absent from prohibited-lands register",
+        "category": "prohibited_land",
         "status": "verified_ok",
         "provenance": make_provenance(),
         "confidence": make_confidence(),
@@ -104,6 +105,7 @@ class TestFinding:
     def test_valid_verified_ok(self) -> None:
         f = Finding(
             claim="survey no. 123/A absent from prohibited-lands register",
+            category="prohibited_land",
             status="verified_ok",
             provenance=make_provenance(),
             confidence=make_confidence(),
@@ -114,6 +116,7 @@ class TestFinding:
         # Agents emit plain JSON; nested dicts must round-trip into models.
         f = Finding(
             claim="claim",
+            category="ownership",
             status="verified_ok",
             provenance={
                 "source_name": "IGRS",
@@ -126,9 +129,14 @@ class TestFinding:
         assert isinstance(f.provenance, Provenance)
         assert isinstance(f.confidence, Confidence)
 
+    def test_rejects_unknown_category(self) -> None:
+        with pytest.raises(ValidationError):
+            make_finding(category="vibes")
+
     def test_not_verified_may_omit_provenance(self) -> None:
         f = Finding(
             claim="litigation status of survey no. 123/A",
+            category="litigation",
             status="not_verified",
             confidence=make_confidence(level="low", reason="portal unreachable"),
         )
@@ -139,6 +147,7 @@ class TestFinding:
         with pytest.raises(ValidationError, match="requires provenance"):
             Finding(
                 claim="claim",
+                category="other",
                 status=status,  # type: ignore[arg-type]
                 confidence=make_confidence(),
             )
@@ -149,6 +158,7 @@ class TestFinding:
         with pytest.raises(ValidationError) as exc_info:
             Finding(
                 claim="claim",
+                category="other",
                 status="verified_ok",
                 provenance={
                     "source_name": "Y",

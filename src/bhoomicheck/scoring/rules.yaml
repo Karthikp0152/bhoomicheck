@@ -1,0 +1,72 @@
+# BhoomiCheck scoring rules — version 1 (DRAFT)
+#
+# How scoring works: every finding with status issue_found or not_verified
+# is flagged. A specific (category, status) rule below decides its
+# severity; if no rule matches, the defaults apply. The parcel's overall
+# verdict is the WORST severity flagged — one critical issue outweighs any
+# number of clean findings. verified_ok findings are never flagged.
+#
+# DRAFT NOTICE: severities here are engineering placeholders. Review with
+# a licensed advocate before any real-world use.
+
+version: 1
+
+# Fallbacks when no specific rule matches. not_verified defaults to
+# medium, never lower: missing data is never a pass (principle 6).
+defaults:
+  issue_found: high
+  not_verified: medium
+
+rules:
+  # ---- deal-breakers: title or buildability is fundamentally broken ----
+  - category: prohibited_land
+    status: issue_found
+    severity: critical
+    rationale: assigned/prohibited land cannot be legally transferred to the buyer
+
+  - category: ownership
+    status: issue_found
+    severity: critical
+    rationale: seller's title does not match revenue/registration records
+
+  - category: master_plan_road
+    status: issue_found
+    severity: critical
+    rationale: master-plan road forces setback surrender; plot may be unbuildable
+
+  - category: ftl_buffer
+    status: issue_found
+    severity: critical
+    rationale: construction inside lake FTL/buffer zone is barred regardless of title
+
+  # ---- serious but potentially resolvable before purchase ----
+  - category: deed_chain
+    status: issue_found
+    severity: high
+    rationale: broken link in the chain of deeds clouds the title
+
+  - category: mortgage
+    status: issue_found
+    severity: high
+    rationale: an undischarged mortgage travels with the land, not the seller
+
+  - category: litigation
+    status: issue_found
+    severity: high
+    rationale: possible pending litigation; name matches require human verification
+
+  # ---- unverified checks that are too important to default to medium ----
+  - category: litigation
+    status: not_verified
+    severity: high
+    rationale: unchecked litigation is a silent trap, not a pass
+
+  - category: prohibited_land
+    status: not_verified
+    severity: high
+    rationale: the prohibited-lands register must be checked before purchase
+
+  - category: ownership
+    status: not_verified
+    severity: high
+    rationale: ownership must be confirmed against Bhu Bharati before purchase

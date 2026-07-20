@@ -38,6 +38,7 @@ VALID_PAYLOAD = json.dumps(
         "findings": [
             {
                 "claim": "sale deed 1234/2015 names B. Swapna as claimant",
+                "category": "ownership",
                 "status": "verified_ok",
                 "provenance": {
                     "source_name": "uploaded sale deed",
