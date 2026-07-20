@@ -11,6 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from bhoomicheck.schemas.confidence import Confidence
+from bhoomicheck.schemas.document import DocumentAnalysisReport, ExtractedDocument
 from bhoomicheck.schemas.finding import Finding
 from bhoomicheck.schemas.parcel import ParcelIdentifier
 from bhoomicheck.schemas.provenance import Provenance
@@ -214,3 +215,70 @@ class TestBaseAgentReport:
                 findings=[],
                 extra_field="x",
             )
+
+
+def make_document(**overrides: object) -> ExtractedDocument:
+    """A valid baseline ExtractedDocument (a sale deed)."""
+    fields: dict[str, object] = {
+        "source_document": "sale_deed_2015_1234.pdf",
+        "doc_type": "sale_deed",
+        "reference_no": "1234/2015",
+        "execution_date": "2015-03-12",
+        "executants": ["K. Rajaiah"],
+        "claimants": ["B. Swapna"],
+        "extraction_confidence": make_confidence(),
+    }
+    fields.update(overrides)
+    return ExtractedDocument(**fields)  # type: ignore[arg-type]
+
+
+class TestExtractedDocument:
+    def test_valid_deed(self) -> None:
+        d = make_document()
+        assert d.doc_type == "sale_deed"
+
+    def test_non_deed_may_omit_deed_fields(self) -> None:
+        d = make_document(
+            doc_type="encumbrance_certificate",
+            reference_no=None,
+            execution_date=None,
+            executants=[],
+            claimants=[],
+        )
+        assert d.reference_no is None
+
+    def test_rejects_other_without_detail(self) -> None:
+        with pytest.raises(ValidationError, match="doc_type_detail"):
+            make_document(doc_type="other")
+
+    def test_other_with_detail_is_valid(self) -> None:
+        d = make_document(doc_type="other", doc_type_detail="notarised agreement of sale")
+        assert d.doc_type_detail is not None
+
+
+class TestDocumentAnalysisReport:
+    def make_report(self, **overrides: object) -> DocumentAnalysisReport:
+        fields: dict[str, object] = {
+            "parcel": make_parcel(),
+            "generated_at": "2026-07-19T14:05:00",
+            "findings": [make_finding()],
+            "documents": [make_document()],
+        }
+        fields.update(overrides)
+        return DocumentAnalysisReport(**fields)  # type: ignore[arg-type]
+
+    def test_agent_name_defaults_to_document_analysis(self) -> None:
+        assert self.make_report().agent_name == "document_analysis"
+
+    def test_rejects_wrong_agent_name(self) -> None:
+        with pytest.raises(ValidationError):
+            self.make_report(agent_name="zoning")
+
+    def test_rejects_empty_documents(self) -> None:
+        with pytest.raises(ValidationError):
+            self.make_report(documents=[])
+
+    def test_is_a_base_agent_report(self) -> None:
+        # The orchestrator handles all specialist reports through the base
+        # type; this pins that the subclass relationship holds.
+        assert isinstance(self.make_report(), BaseAgentReport)
