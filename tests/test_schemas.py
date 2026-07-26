@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from bhoomicheck.schemas.confidence import Confidence
-from bhoomicheck.schemas.document import DocumentAnalysisReport, ExtractedDocument
+from bhoomicheck.schemas.document import Boundaries, DocumentAnalysisReport, ExtractedDocument
 from bhoomicheck.schemas.finding import Finding
 from bhoomicheck.schemas.parcel import ParcelIdentifier
 from bhoomicheck.schemas.provenance import Provenance
@@ -264,6 +264,46 @@ class TestExtractedDocument:
     def test_other_with_detail_is_valid(self) -> None:
         d = make_document(doc_type="other", doc_type_detail="notarised agreement of sale")
         assert d.doc_type_detail is not None
+
+    def test_new_extent_and_survey_fields_default_to_none(self) -> None:
+        # Baseline fixture never sets them; a scanned deed the agent
+        # couldn't fully read must be able to omit all of these.
+        d = make_document()
+        assert d.survey_number is None
+        assert d.extent_raw is None
+        assert d.extent_sq_yards is None
+        assert d.boundaries is None
+
+    def test_survey_and_extent_fields_accept_values(self) -> None:
+        d = make_document(
+            survey_number="123/A",
+            extent_raw="0 Ac 12 Guntas",
+            extent_sq_yards=580.0,
+        )
+        assert d.survey_number == "123/A"
+        assert d.extent_raw == "0 Ac 12 Guntas"
+        assert d.extent_sq_yards == 580.0
+
+    def test_boundaries_accepts_all_four_sides(self) -> None:
+        d = make_document(
+            boundaries=Boundaries(
+                north="survey no. 124",
+                south="village road",
+                east="survey no. 122",
+                west="canal",
+            )
+        )
+        assert d.boundaries is not None
+        assert d.boundaries.north == "survey no. 124"
+        assert d.boundaries.west == "canal"
+
+    def test_boundaries_allows_partially_illegible_sides(self) -> None:
+        # A smudged scan may only yield some of the four directions; the
+        # other sides must stay None rather than block the whole document.
+        d = make_document(boundaries=Boundaries(north="survey no. 124"))
+        assert d.boundaries is not None
+        assert d.boundaries.north == "survey no. 124"
+        assert d.boundaries.south is None
 
 
 class TestDocumentAnalysisReport:
