@@ -4,8 +4,9 @@ Usage:
     python -m bhoomicheck deed.pdf ec.pdf
 
 Asks for the parcel's survey number, village, mandal, and district
-interactively, then prints the validated DocumentAnalysisReport as JSON
-to stdout.
+interactively, runs the Document Analysis Agent, scores its findings
+against scoring/rules.yaml, and prints the report, the risk assessment,
+and the mandatory disclaimer as JSON to stdout.
 """
 
 import argparse
@@ -16,11 +17,13 @@ from dotenv import load_dotenv
 
 from bhoomicheck.agents.document_analysis import DocumentAnalysisAgent
 from bhoomicheck.agents.gemini import GeminiProvider
+from bhoomicheck.schemas.assessment import DISCLAIMER
 from bhoomicheck.schemas.parcel import ParcelIdentifier
+from bhoomicheck.scoring.engine import evaluate, load_rules
 
 
 def main() -> int:
-    """Parse the PDF paths, prompt for parcel details, run the agent, print the report."""
+    """Parse the PDF paths, prompt for parcel details, run the agent, score, print."""
     # Entry point owns process setup: .env is loaded here, once, and
     # nowhere else — library code never mutates the environment.
     load_dotenv()
@@ -48,7 +51,19 @@ def main() -> int:
     )
     agent = DocumentAnalysisAgent(GeminiProvider())
     report = agent.analyze(parcel, args.pdfs)
+
+    # Scoring is pure mechanics over the agent's own findings (scoring/
+    # engine.py principle 5) — the judgment already happened in the agent;
+    # this step only applies the auditable rules in rules.yaml to it.
+    assessment = evaluate(report.findings, load_rules())
+
+    print("=== Document Analysis Report ===")
     print(report.model_dump_json(indent=2))
+    print()
+    print("=== Risk Assessment ===")
+    print(assessment.model_dump_json(indent=2))
+    print()
+    print(DISCLAIMER)
     return 0
 
 
