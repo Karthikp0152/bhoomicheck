@@ -58,6 +58,14 @@ class TestEvaluate:
         assert assessment.overall == "critical"
         assert "cannot be legally transferred" in assessment.flags[0].rationale
 
+    def test_unsanctioned_layout_is_critical(self, ruleset: RuleSet) -> None:
+        # An unapproved layout blocks building permission/utilities even
+        # with an otherwise clean title — same severity class as
+        # master_plan_road and ftl_buffer, not a generic "other" default.
+        assessment = evaluate([flagged("layout_approval", "issue_found")], ruleset)
+        assert assessment.overall == "critical"
+        assert "building permission" in assessment.flags[0].rationale
+
     def test_default_applies_when_no_specific_rule(self, ruleset: RuleSet) -> None:
         # (mortgage, not_verified) deliberately has no specific rule in
         # rules.yaml, so the not_verified default (medium) must apply.
@@ -80,7 +88,8 @@ class TestEvaluate:
         # Principle 6 as an executable guarantee, for every category.
         categories = [
             "ownership", "deed_chain", "mortgage", "litigation",
-            "prohibited_land", "master_plan_road", "ftl_buffer", "other",
+            "prohibited_land", "master_plan_road", "ftl_buffer",
+            "layout_approval", "other",
         ]
         for category in categories:
             assessment = evaluate([flagged(category, "not_verified")], ruleset)

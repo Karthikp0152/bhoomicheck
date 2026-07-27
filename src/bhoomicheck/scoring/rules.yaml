@@ -39,6 +39,11 @@ rules:
     severity: critical
     rationale: construction inside lake FTL/buffer zone is barred regardless of title
 
+  - category: layout_approval
+    status: issue_found
+    severity: critical
+    rationale: plots in an unsanctioned layout cannot get building permission or utility connections regardless of clean title
+
   # ---- serious but potentially resolvable before purchase ----
   - category: deed_chain
     status: issue_found
@@ -70,3 +75,8 @@ rules:
     status: not_verified
     severity: high
     rationale: ownership must be confirmed against Bhu Bharati before purchase
+
+  - category: layout_approval
+    status: not_verified
+    severity: high
+    rationale: layout approval status must be confirmed with the local planning authority before purchase

@@ -24,6 +24,7 @@ FindingCategory = Literal[
     "prohibited_land",
     "master_plan_road",
     "ftl_buffer",
+    "layout_approval",
     "other",
 ]
 
