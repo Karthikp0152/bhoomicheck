@@ -12,6 +12,22 @@ from pydantic import BaseModel, Field, model_validator
 from bhoomicheck.schemas.confidence import Confidence
 from bhoomicheck.schemas.provenance import Provenance
 
+# The risk families scoring rules match on. Rules cannot reliably match
+# prose claims, so every finding must self-classify into one of these;
+# "other" exists so an unanticipated risk is never forced into a wrong
+# bucket (scoring handles it via defaults).
+FindingCategory = Literal[
+    "ownership",
+    "deed_chain",
+    "mortgage",
+    "litigation",
+    "prohibited_land",
+    "master_plan_road",
+    "ftl_buffer",
+    "layout_approval",
+    "other",
+]
+
 
 class Finding(BaseModel):
     """One verified, problematic, or unverifiable claim about a parcel.
@@ -19,6 +35,8 @@ class Finding(BaseModel):
     Attributes:
         claim: The statement that was checked, e.g. "survey no. 123/A is
             not listed in the prohibited-lands register".
+        category: Which risk family the claim belongs to — the hook the
+            scoring rules match on (principle 5).
         status: Outcome of the check. "not_verified" is a first-class
             outcome so missing data can never masquerade as good news.
         provenance: Where the supporting fact came from. Required unless
@@ -27,6 +45,7 @@ class Finding(BaseModel):
     """
 
     claim: str = Field(min_length=1)
+    category: FindingCategory
     status: Literal["verified_ok", "issue_found", "not_verified"]
     provenance: Provenance | None = None
     confidence: Confidence

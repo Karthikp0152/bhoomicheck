@@ -38,6 +38,7 @@ VALID_PAYLOAD = json.dumps(
         "findings": [
             {
                 "claim": "sale deed 1234/2015 names B. Swapna as claimant",
+                "category": "ownership",
                 "status": "verified_ok",
                 "provenance": {
                     "source_name": "uploaded sale deed",
@@ -54,6 +55,12 @@ VALID_PAYLOAD = json.dumps(
 # Structurally valid JSON, but the payload violates a schema rule
 # (confidence.reason must be non-empty), so validation must fail.
 INVALID_PAYLOAD = VALID_PAYLOAD.replace("clearly printed party names", "")
+
+
+def _payload_with_survey_number(survey_number: str) -> str:
+    data = json.loads(VALID_PAYLOAD)
+    data["documents"][0]["survey_number"] = survey_number
+    return json.dumps(data)
 
 
 class FakeProvider:
@@ -94,3 +101,19 @@ def test_raises_after_retries_exhausted() -> None:
     with pytest.raises(ValidationError):
         agent.analyze(PARCEL, [])
     assert len(provider.prompts) == 3  # initial + 2 retries, then loud failure
+
+
+def test_matching_survey_number_adds_no_finding() -> None:
+    agent = DocumentAnalysisAgent(FakeProvider([_payload_with_survey_number("123/A")]))
+    report = agent.analyze(PARCEL, [Path("sale_deed_2015_1234.pdf")])
+    assert len(report.findings) == 1  # only the model's own finding
+
+
+def test_mismatched_survey_number_adds_a_deed_chain_finding() -> None:
+    agent = DocumentAnalysisAgent(FakeProvider([_payload_with_survey_number("999/Z")]))
+    report = agent.analyze(PARCEL, [Path("sale_deed_2015_1234.pdf")])
+    assert len(report.findings) == 2  # the model's finding + the cross-check
+    cross_check = report.findings[-1]
+    assert cross_check.category == "deed_chain"
+    assert cross_check.status == "issue_found"
+    assert "999/Z" in cross_check.claim and "123/A" in cross_check.claim

@@ -11,7 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from bhoomicheck.schemas.confidence import Confidence
-from bhoomicheck.schemas.document import DocumentAnalysisReport, ExtractedDocument
+from bhoomicheck.schemas.document import Boundaries, DocumentAnalysisReport, ExtractedDocument
 from bhoomicheck.schemas.finding import Finding
 from bhoomicheck.schemas.parcel import ParcelIdentifier
 from bhoomicheck.schemas.provenance import Provenance
@@ -46,6 +46,7 @@ def make_finding(**overrides: object) -> Finding:
     """A valid baseline Finding."""
     fields: dict[str, object] = {
         "claim": "survey no. 123/A absent from prohibited-lands register",
+        "category": "prohibited_land",
         "status": "verified_ok",
         "provenance": make_provenance(),
         "confidence": make_confidence(),
@@ -104,6 +105,7 @@ class TestFinding:
     def test_valid_verified_ok(self) -> None:
         f = Finding(
             claim="survey no. 123/A absent from prohibited-lands register",
+            category="prohibited_land",
             status="verified_ok",
             provenance=make_provenance(),
             confidence=make_confidence(),
@@ -114,6 +116,7 @@ class TestFinding:
         # Agents emit plain JSON; nested dicts must round-trip into models.
         f = Finding(
             claim="claim",
+            category="ownership",
             status="verified_ok",
             provenance={
                 "source_name": "IGRS",
@@ -126,9 +129,14 @@ class TestFinding:
         assert isinstance(f.provenance, Provenance)
         assert isinstance(f.confidence, Confidence)
 
+    def test_rejects_unknown_category(self) -> None:
+        with pytest.raises(ValidationError):
+            make_finding(category="vibes")
+
     def test_not_verified_may_omit_provenance(self) -> None:
         f = Finding(
             claim="litigation status of survey no. 123/A",
+            category="litigation",
             status="not_verified",
             confidence=make_confidence(level="low", reason="portal unreachable"),
         )
@@ -139,6 +147,7 @@ class TestFinding:
         with pytest.raises(ValidationError, match="requires provenance"):
             Finding(
                 claim="claim",
+                category="other",
                 status=status,  # type: ignore[arg-type]
                 confidence=make_confidence(),
             )
@@ -149,6 +158,7 @@ class TestFinding:
         with pytest.raises(ValidationError) as exc_info:
             Finding(
                 claim="claim",
+                category="other",
                 status="verified_ok",
                 provenance={
                     "source_name": "Y",
@@ -254,6 +264,46 @@ class TestExtractedDocument:
     def test_other_with_detail_is_valid(self) -> None:
         d = make_document(doc_type="other", doc_type_detail="notarised agreement of sale")
         assert d.doc_type_detail is not None
+
+    def test_new_extent_and_survey_fields_default_to_none(self) -> None:
+        # Baseline fixture never sets them; a scanned deed the agent
+        # couldn't fully read must be able to omit all of these.
+        d = make_document()
+        assert d.survey_number is None
+        assert d.extent_raw is None
+        assert d.extent_sq_yards is None
+        assert d.boundaries is None
+
+    def test_survey_and_extent_fields_accept_values(self) -> None:
+        d = make_document(
+            survey_number="123/A",
+            extent_raw="0 Ac 12 Guntas",
+            extent_sq_yards=580.0,
+        )
+        assert d.survey_number == "123/A"
+        assert d.extent_raw == "0 Ac 12 Guntas"
+        assert d.extent_sq_yards == 580.0
+
+    def test_boundaries_accepts_all_four_sides(self) -> None:
+        d = make_document(
+            boundaries=Boundaries(
+                north="survey no. 124",
+                south="village road",
+                east="survey no. 122",
+                west="canal",
+            )
+        )
+        assert d.boundaries is not None
+        assert d.boundaries.north == "survey no. 124"
+        assert d.boundaries.west == "canal"
+
+    def test_boundaries_allows_partially_illegible_sides(self) -> None:
+        # A smudged scan may only yield some of the four directions; the
+        # other sides must stay None rather than block the whole document.
+        d = make_document(boundaries=Boundaries(north="survey no. 124"))
+        assert d.boundaries is not None
+        assert d.boundaries.north == "survey no. 124"
+        assert d.boundaries.south is None
 
 
 class TestDocumentAnalysisReport:
