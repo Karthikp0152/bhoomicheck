@@ -56,7 +56,7 @@ class KudaMasterPlanExtract(BaseModel):
     notes: str | None = None
 
 
-class KudaMasterPlanAdapter(ManualAdapter[KudaMasterPlanExtract]):
+class KudaMasterPlanAdapter(ManualAdapter[ParcelIdentifier, KudaMasterPlanExtract]):
     """Manual-mode adapter: KUDA Master Plan 2041, via 1acre.in's overlay.
 
     PROVISIONAL -- see module docstring. The lookup workflow and URLs are

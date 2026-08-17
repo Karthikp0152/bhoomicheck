@@ -17,7 +17,7 @@ PARCEL = ParcelIdentifier(
 )
 
 
-class _StubAdapter(ManualAdapter[str]):
+class _StubAdapter(ManualAdapter[ParcelIdentifier, str]):
     source_name = "Stub Registry"
 
     def instructions(self, parcel: ParcelIdentifier) -> str:
@@ -40,7 +40,7 @@ def test_parse_returns_subclass_defined_shape(tmp_path: Path) -> None:
 
 
 def test_cannot_instantiate_without_implementing_abstract_methods() -> None:
-    class _Incomplete(ManualAdapter[str]):
+    class _Incomplete(ManualAdapter[ParcelIdentifier, str]):
         source_name = "Incomplete"
 
     with pytest.raises(TypeError):
