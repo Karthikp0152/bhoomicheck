@@ -23,37 +23,9 @@ until one exists, rather than guess at how to read it.
 
 from pathlib import Path
 
-from pydantic import BaseModel
-
 from bhoomicheck.adapters.base import ManualAdapter
 from bhoomicheck.schemas.parcel import ParcelIdentifier
-
-
-class KudaMasterPlanExtract(BaseModel):
-    """Raw fields expected off a zoomed-in 1acre.in master-plan screenshot.
-
-    PROVISIONAL -- see module docstring. Every field is optional because
-    we don't yet know which of these are actually legible on a screenshot.
-
-    Attributes:
-        zoning_classification: e.g. "residential", "commercial" -- exact
-            vocabulary 1acre/KUDA uses is unconfirmed, so this stays free
-            text rather than a Literal for now.
-        road_widening_affects_parcel: Whether a master-plan road passes
-            through or borders the parcel, forcing a setback surrender --
-            this is the central risk from CLAUDE.md's problem statement.
-        setback_required_meters: Width of land the owner would have to
-            surrender, if visible/labeled on the map.
-        within_ftl_buffer: Whether the parcel falls inside a lake Full
-            Tank Level buffer zone.
-        notes: Anything else visible that doesn't fit a structured field.
-    """
-
-    zoning_classification: str | None = None
-    road_widening_affects_parcel: bool | None = None
-    setback_required_meters: float | None = None
-    within_ftl_buffer: bool | None = None
-    notes: str | None = None
+from bhoomicheck.schemas.zoning import KudaMasterPlanExtract
 
 
 class KudaMasterPlanAdapter(ManualAdapter[ParcelIdentifier, KudaMasterPlanExtract]):

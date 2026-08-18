@@ -12,11 +12,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from bhoomicheck.adapters.litigation import (
-    LitigationAdapter,
-    LitigationCaseExtract,
-    LitigationSearchQuery,
-)
+from bhoomicheck.adapters.litigation import LitigationAdapter
+from bhoomicheck.schemas.litigation import LitigationCaseExtract, LitigationSearchQuery
 
 QUERY = LitigationSearchQuery(full_name="K. Rajaiah", also_known_as=["Rajaiah Kondapaka"])
 

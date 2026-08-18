@@ -17,6 +17,17 @@ class Finding(BaseModel):
     """One verified, problematic, or unverifiable claim about a parcel.
 
     Attributes:
+        check_id: Stable, machine-readable identifier for *what kind* of
+            check this is, e.g. "zoning.road_widening_setback",
+            "litigation.name_match" -- dotted, lowercase, snake_case
+            segments. This is what scoring/rules.yaml matches against
+            (architecture principle 5); claim is prose for a human
+            report, and prose is not something a rule should parse.
+            Deterministic agents (zoning, litigation) use a small fixed
+            vocabulary; document_analysis's LLM-discovered findings are
+            open-ended, so rules.yaml needs a default weight for any
+            check_id it doesn't recognize rather than assuming every one
+            is enumerable in advance.
         claim: The statement that was checked, e.g. "survey no. 123/A is
             not listed in the prohibited-lands register".
         status: Outcome of the check. "not_verified" is a first-class
@@ -26,6 +37,7 @@ class Finding(BaseModel):
         confidence: The agent's trust in this finding, with its reason.
     """
 
+    check_id: str = Field(min_length=1)
     claim: str = Field(min_length=1)
     status: Literal["verified_ok", "issue_found", "not_verified"]
     provenance: Provenance | None = None

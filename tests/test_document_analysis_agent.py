@@ -37,6 +37,7 @@ VALID_PAYLOAD = json.dumps(
         ],
         "findings": [
             {
+                "check_id": "document.deed_party_match",
                 "claim": "sale deed 1234/2015 names B. Swapna as claimant",
                 "status": "verified_ok",
                 "provenance": {

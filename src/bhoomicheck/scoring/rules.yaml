@@ -1,0 +1,82 @@
+# Auditable risk-scoring rules (architecture principle 5: scoring rules
+# live here, not in agent prompts or Python code, so they're diffable and
+# reviewable without reading source).
+#
+# scoring/engine.py starts a parcel at 100 points and subtracts, per
+# Finding, however many points that finding's (check_id, status,
+# confidence) combination costs under the rule below. Score never drops
+# below 0.
+#
+# `default` applies to any check_id with no entry under `rules` below.
+# This matters because document_analysis's findings come from an LLM
+# reading arbitrary documents -- its check_ids are open-ended, not a
+# fixed enumerable set like the deterministic zoning/litigation agents,
+# so an unrecognized check_id must still score *something*, not crash or
+# silently contribute 0.
+#
+# verified_ok is a flat number, not broken out by confidence: a low-
+# confidence "verified_ok" not costing points is a known simplification,
+# not an oversight -- see engine.py module docstring.
+
+default:
+  verified_ok: 0
+  not_verified:
+    high: 5
+    medium: 5
+    low: 5
+  issue_found:
+    high: 20
+    medium: 12
+    low: 5
+
+rules:
+  # The flagship risk this whole project exists to catch (CLAUDE.md's
+  # problem statement): a master-plan road forcing a setback surrender
+  # the buyer didn't know about. Weighted highest of any rule.
+  zoning.road_widening_setback:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 45
+      medium: 30
+      low: 15
+
+  zoning.ftl_buffer:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  zoning.classification:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  # Deliberately lower ceiling than zoning.road_widening_setback: a name
+  # match is an unconfirmed lead requiring human verification (CLAUDE.md
+  # hard guardrail), not a confirmed problem, so even a "high confidence"
+  # match here should prompt investigation, not dominate the score.
+  litigation.name_match:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 25
+      medium: 15
+      low: 8
