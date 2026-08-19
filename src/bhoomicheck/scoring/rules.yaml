@@ -80,3 +80,47 @@ rules:
       high: 25
       medium: 15
       low: 8
+
+  # The other named risk from CLAUDE.md's problem statement: assigned or
+  # prohibited (22-A) land. Weighted like zoning.ftl_buffer -- both are
+  # "this parcel is flagged in a protected/restricted register" checks of
+  # comparable severity.
+  land_records.prohibited_land:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # These two never actually reach "issue_found" today -- LandRecordsAgent
+  # only ever reports ownership/land_type as verified_ok or not_verified,
+  # same as zoning.classification. Explicit entries kept anyway, for the
+  # same audit-trail reason zoning.classification has one: if a future
+  # agent version adds an issue_found path here (e.g. flagging a land_type
+  # value itself as risky), the weight is deliberate, not a silent
+  # default-fallback surprise.
+  land_records.ownership:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  land_records.land_type:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
