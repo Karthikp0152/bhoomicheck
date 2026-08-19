@@ -124,3 +124,85 @@ rules:
       high: 10
       medium: 6
       low: 3
+
+  # A POA-based sale alone is a yellow flag -- legitimate GPA sales for
+  # family/convenience reasons exist -- so it's weighted like
+  # litigation.name_match: worth investigating, not dominating the score
+  # on its own. See owner_background.poa_registered for the sharper risk.
+  owner_background.poa_sale:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 25
+      medium: 15
+      low: 8
+
+  # An unregistered/unfindable POA backing the sale is a strong fraud
+  # signal (per Suraj Lamp v. State of Haryana), not just missing
+  # paperwork -- weighted like land_records.prohibited_land.
+  owner_background.poa_registered:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # A seller name that doesn't match IGRS's registered chain suggests
+  # possible impersonation or an unclean title chain -- same severity
+  # tier as owner_background.poa_registered.
+  owner_background.seller_identity:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # Growth potential is informational/upside, not risk -- GrowthPotentialAgent
+  # never actually emits issue_found for these (see its module docstring),
+  # so this entry mainly exists to keep not_verified low: missing upside
+  # info isn't the same kind of gap as missing risk info, and shouldn't be
+  # penalized as heavily. issue_found values kept anyway for the same
+  # audit-trail reason zoning.classification's has one.
+  growth_potential.growth_corridor:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  growth_potential.road_upgrade_proximity:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  growth_potential.approved_layout_proximity:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3

@@ -50,7 +50,14 @@ class KudaMasterPlanAdapter(ManualAdapter[ParcelIdentifier, KudaMasterPlanExtrac
             f"{parcel.district} district.\n"
             "3. Zoom in until the parcel and its surrounding zone "
             "colors/road lines are clearly visible.\n"
-            "4. Take a screenshot showing the parcel and its surrounding "
+            "4. Also note, using the map's legend: is the parcel inside a "
+            "\"Growth Corridor 1/2\" or \"Village Expansion Zone\"? Is a "
+            "proposed Outer Ring Road / Arterial Road upgrade nearby "
+            "(without directly crossing the parcel)? Is it near an area "
+            "marked \"Approved Layout\"? This same screenshot is used for "
+            "both the setback/zoning check and the growth-potential check "
+            "-- no separate lookup needed.\n"
+            "5. Take a screenshot showing the parcel and its surrounding "
             "zone/road markings, and upload it here."
         )
 

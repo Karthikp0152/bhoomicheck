@@ -22,6 +22,14 @@ class KudaMasterPlanExtract(BaseModel):
     optional because we don't yet know which of these are actually
     legible on a screenshot; nobody has supplied a real sample yet.
 
+    One screenshot of the KUDA Master Plan 2041 serves two different
+    agents: ZoningAgent reads the risk-framed fields (does a road cut
+    through *this* parcel, forcing a setback), while GrowthPotentialAgent
+    reads the opportunity-framed fields below (is a major upgrade nearby
+    without directly affecting the parcel) -- the map's own legend
+    ("Growth Corridor 1/2", "Village Expansion Zone", "Approved Layouts")
+    is what grounds those fields, not a second lookup on a second source.
+
     Attributes:
         zoning_classification: e.g. "residential", "commercial" -- exact
             vocabulary 1acre/KUDA uses is unconfirmed, so this stays free
@@ -33,6 +41,16 @@ class KudaMasterPlanExtract(BaseModel):
             surrender, if visible/labeled on the map.
         within_ftl_buffer: Whether the parcel falls inside a lake Full
             Tank Level buffer zone.
+        in_growth_corridor: Whether the parcel falls inside a "Growth
+            Corridor 1/2" or "Village Expansion Zone" area per the map's
+            legend -- an opportunity signal, not a risk one.
+        near_major_road_upgrade: Whether a proposed Outer Ring Road /
+            Arterial Road widening passes near (but not through) the
+            parcel -- nearby infrastructure investment without the
+            setback risk road_widening_affects_parcel already captures.
+        near_approved_layout: Whether the parcel is near an area the map
+            marks as an "Approved Layout" -- a proxy for nearby
+            development activity/demand.
         notes: Anything else visible that doesn't fit a structured field.
     """
 
@@ -40,6 +58,9 @@ class KudaMasterPlanExtract(BaseModel):
     road_widening_affects_parcel: bool | None = None
     setback_required_meters: float | None = None
     within_ftl_buffer: bool | None = None
+    in_growth_corridor: bool | None = None
+    near_major_road_upgrade: bool | None = None
+    near_approved_layout: bool | None = None
     notes: str | None = None
 
 
