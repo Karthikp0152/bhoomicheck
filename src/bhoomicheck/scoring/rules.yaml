@@ -1,0 +1,208 @@
+# Auditable risk-scoring rules (architecture principle 5: scoring rules
+# live here, not in agent prompts or Python code, so they're diffable and
+# reviewable without reading source).
+#
+# scoring/engine.py starts a parcel at 100 points and subtracts, per
+# Finding, however many points that finding's (check_id, status,
+# confidence) combination costs under the rule below. Score never drops
+# below 0.
+#
+# `default` applies to any check_id with no entry under `rules` below.
+# This matters because document_analysis's findings come from an LLM
+# reading arbitrary documents -- its check_ids are open-ended, not a
+# fixed enumerable set like the deterministic zoning/litigation agents,
+# so an unrecognized check_id must still score *something*, not crash or
+# silently contribute 0.
+#
+# verified_ok is a flat number, not broken out by confidence: a low-
+# confidence "verified_ok" not costing points is a known simplification,
+# not an oversight -- see engine.py module docstring.
+
+default:
+  verified_ok: 0
+  not_verified:
+    high: 5
+    medium: 5
+    low: 5
+  issue_found:
+    high: 20
+    medium: 12
+    low: 5
+
+rules:
+  # The flagship risk this whole project exists to catch (CLAUDE.md's
+  # problem statement): a master-plan road forcing a setback surrender
+  # the buyer didn't know about. Weighted highest of any rule.
+  zoning.road_widening_setback:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 45
+      medium: 30
+      low: 15
+
+  zoning.ftl_buffer:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  zoning.classification:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  # Deliberately lower ceiling than zoning.road_widening_setback: a name
+  # match is an unconfirmed lead requiring human verification (CLAUDE.md
+  # hard guardrail), not a confirmed problem, so even a "high confidence"
+  # match here should prompt investigation, not dominate the score.
+  litigation.name_match:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 25
+      medium: 15
+      low: 8
+
+  # The other named risk from CLAUDE.md's problem statement: assigned or
+  # prohibited (22-A) land. Weighted like zoning.ftl_buffer -- both are
+  # "this parcel is flagged in a protected/restricted register" checks of
+  # comparable severity.
+  land_records.prohibited_land:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # These two never actually reach "issue_found" today -- LandRecordsAgent
+  # only ever reports ownership/land_type as verified_ok or not_verified,
+  # same as zoning.classification. Explicit entries kept anyway, for the
+  # same audit-trail reason zoning.classification has one: if a future
+  # agent version adds an issue_found path here (e.g. flagging a land_type
+  # value itself as risky), the weight is deliberate, not a silent
+  # default-fallback surprise.
+  land_records.ownership:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  land_records.land_type:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  # A POA-based sale alone is a yellow flag -- legitimate GPA sales for
+  # family/convenience reasons exist -- so it's weighted like
+  # litigation.name_match: worth investigating, not dominating the score
+  # on its own. See owner_background.poa_registered for the sharper risk.
+  owner_background.poa_sale:
+    verified_ok: 0
+    not_verified:
+      high: 5
+      medium: 5
+      low: 5
+    issue_found:
+      high: 25
+      medium: 15
+      low: 8
+
+  # An unregistered/unfindable POA backing the sale is a strong fraud
+  # signal (per Suraj Lamp v. State of Haryana), not just missing
+  # paperwork -- weighted like land_records.prohibited_land.
+  owner_background.poa_registered:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # A seller name that doesn't match IGRS's registered chain suggests
+  # possible impersonation or an unclean title chain -- same severity
+  # tier as owner_background.poa_registered.
+  owner_background.seller_identity:
+    verified_ok: 0
+    not_verified:
+      high: 10
+      medium: 10
+      low: 10
+    issue_found:
+      high: 40
+      medium: 25
+      low: 12
+
+  # Growth potential is informational/upside, not risk -- GrowthPotentialAgent
+  # never actually emits issue_found for these (see its module docstring),
+  # so this entry mainly exists to keep not_verified low: missing upside
+  # info isn't the same kind of gap as missing risk info, and shouldn't be
+  # penalized as heavily. issue_found values kept anyway for the same
+  # audit-trail reason zoning.classification's has one.
+  growth_potential.growth_corridor:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  growth_potential.road_upgrade_proximity:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3
+
+  growth_potential.approved_layout_proximity:
+    verified_ok: 0
+    not_verified:
+      high: 2
+      medium: 2
+      low: 2
+    issue_found:
+      high: 10
+      medium: 6
+      low: 3

@@ -44,6 +44,12 @@ Your JSON must match this schema exactly:
 Rules:
 - One entry in "documents" per attached file; source_document must be the
   exact filename from the list above (never invent a filename).
+- Every finding needs a check_id: a short, stable, lowercase identifier
+  for what kind of check this is, dotted like "document.<topic>", e.g.
+  "document.deed_chain_break", "document.mortgage_undischarged",
+  "document.party_mismatch". Use the same check_id for every finding
+  about the same kind of issue, even across different documents or runs
+  — scoring rules match on this id, not on the wording of "claim".
 - Every finding needs provenance (source_type "manual", document = the
   filename it came from, fetched_at = today's date given above) and a
   confidence with a concrete reason.

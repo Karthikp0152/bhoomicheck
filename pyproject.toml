@@ -11,6 +11,8 @@ dependencies = [
     "pydantic>=2",
     "google-genai",
     "python-dotenv",
+    "pyyaml",
+    "langgraph",
 ]
 
 [project.optional-dependencies]

@@ -45,6 +45,7 @@ def make_parcel(**overrides: object) -> ParcelIdentifier:
 def make_finding(**overrides: object) -> Finding:
     """A valid baseline Finding."""
     fields: dict[str, object] = {
+        "check_id": "land_records.prohibited_land",
         "claim": "survey no. 123/A absent from prohibited-lands register",
         "status": "verified_ok",
         "provenance": make_provenance(),
@@ -103,6 +104,7 @@ class TestConfidence:
 class TestFinding:
     def test_valid_verified_ok(self) -> None:
         f = Finding(
+            check_id="land_records.prohibited_land",
             claim="survey no. 123/A absent from prohibited-lands register",
             status="verified_ok",
             provenance=make_provenance(),
@@ -110,9 +112,14 @@ class TestFinding:
         )
         assert f.status == "verified_ok"
 
+    def test_rejects_empty_check_id(self) -> None:
+        with pytest.raises(ValidationError):
+            make_finding(check_id="")
+
     def test_nested_dicts_are_validated(self) -> None:
         # Agents emit plain JSON; nested dicts must round-trip into models.
         f = Finding(
+            check_id="land_records.encumbrance",
             claim="claim",
             status="verified_ok",
             provenance={
@@ -128,6 +135,7 @@ class TestFinding:
 
     def test_not_verified_may_omit_provenance(self) -> None:
         f = Finding(
+            check_id="litigation.name_match",
             claim="litigation status of survey no. 123/A",
             status="not_verified",
             confidence=make_confidence(level="low", reason="portal unreachable"),
@@ -138,6 +146,7 @@ class TestFinding:
     def test_checked_statuses_require_provenance(self, status: str) -> None:
         with pytest.raises(ValidationError, match="requires provenance"):
             Finding(
+                check_id="land_records.encumbrance",
                 claim="claim",
                 status=status,  # type: ignore[arg-type]
                 confidence=make_confidence(),
@@ -148,6 +157,7 @@ class TestFinding:
         # error location must point into the nested model, not just "provenance".
         with pytest.raises(ValidationError) as exc_info:
             Finding(
+                check_id="land_records.encumbrance",
                 claim="claim",
                 status="verified_ok",
                 provenance={
